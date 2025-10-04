@@ -1,0 +1,39 @@
+from transformers import AutoModelForCausalLM, AutoTokenizer, TextStreamer
+from config import Config
+import torch
+
+def infer():
+    cfg = Config()
+    
+    # 加载模型和tokenizer
+    tokenizer = AutoTokenizer.from_pretrained(cfg.model_name)
+    model = AutoModelForCausalLM.from_pretrained(
+        cfg.model_name,
+        torch_dtype=torch.float16,
+        device_map="auto"
+    )
+    
+    # 交互式推理
+    print("DeepSeekCoder 代码生成 (输入'quit'退出)")
+    while True:
+        prompt = input("\n输入你的需求: ")
+        if prompt.lower() == 'quit':
+            break
+            
+        inputs = tokenizer.encode(prompt, return_tensors="pt").to(cfg.device)
+        
+        # 生成代码
+        outputs = model.generate(
+            inputs,
+            max_length=cfg.generation_max_length,
+            temperature=cfg.temperature,
+            do_sample=True
+        )
+        
+        # 解码输出
+        generated_code = tokenizer.decode(outputs[0], skip_special_tokens=True)
+        print("\n生成的代码:")
+        print(generated_code)
+
+if __name__ == "__main__":
+    infer()
